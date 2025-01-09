@@ -1,6 +1,8 @@
-use axum::{http::StatusCode, response::IntoResponse, Router};
+use axum::{http::StatusCode, response::IntoResponse, routing::get, Router};
 use sqlx::{MySql, Pool};
 use std::sync::Arc;
+
+pub mod pasta;
 
 pub struct AppState {
     db: Pool<MySql>,
@@ -19,6 +21,7 @@ pub async fn run(pool: Pool<MySql>) {
 
 pub fn api_router(shared_state: Arc<AppState>) -> Router {
     Router::new()
+        .route("/api/pasta/{slug}", get(pasta::get_pasta))
         .with_state(shared_state)
         .fallback(handler_404)
 }
