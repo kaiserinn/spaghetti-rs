@@ -5,8 +5,8 @@ edition = "2021"
 
 [dependencies]
 axum = "0.8.1"
+serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0.134"
 tokio = { version = "1.42.0", features = ["full"] }
-sqlx = { version = "0.8.2", features = [ "mysql", "runtime-tokio" ] }
-dotenv_codegen = "0.15.0"
-clap = { version = "4.5.23", features = ["derive"] }
+sqlx = { version = "0.8.2", features = [ "mysql", "runtime-tokio", "time" ] }
+dotenvy = "0.15.7"

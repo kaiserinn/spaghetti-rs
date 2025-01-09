@@ -1,8 +1,7 @@
-use spaghetti_rs::{cli, config::Config};
-use clap::Parser;
+#[tokio::main]
+async fn main() {
+    let db_url = dotenvy::var("DATABASE_URL").unwrap();
+    let pool = sqlx::MySqlPool::connect(&db_url).await.unwrap();
 
-fn main() {
-    let config = Config::parse();
-
-    cli::run(&config);
+    spaghetti_rs::run(pool).await;
 }
