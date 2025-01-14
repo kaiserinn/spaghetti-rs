@@ -2,6 +2,8 @@ use axum::{http::StatusCode, response::IntoResponse, routing::get, Router};
 use sqlx::{MySql, Pool};
 use std::sync::Arc;
 
+pub mod error;
+pub mod extractor;
 pub mod pasta;
 
 pub struct AppState {
@@ -27,5 +29,5 @@ pub fn api_router(shared_state: Arc<AppState>) -> Router {
 }
 
 async fn handler_404() -> impl IntoResponse {
-    (StatusCode::NOT_FOUND, "nothing to see here")
+    (StatusCode::NOT_FOUND, "Nothing to see here.")
 }
