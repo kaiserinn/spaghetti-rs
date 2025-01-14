@@ -1,8 +1,8 @@
-use crate::AppState;
+use crate::error::ApiError;
+use crate::{extractor::Json, AppState};
 use axum::{
-    extract::{rejection::JsonRejection, Path, State},
+    extract::{Path, State},
     http::StatusCode,
-    Json,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
@@ -27,32 +27,38 @@ pub struct GetPastaPayload {
 pub async fn get_pasta(
     Path(slug): Path<String>,
     State(state): State<Arc<AppState>>,
-    payload: Result<Json<GetPastaPayload>, JsonRejection>,
-) -> Result<Json<Value>, (StatusCode, String)> {
+    payload: Result<Json<GetPastaPayload>, ApiError>,
+) -> Result<Json<Value>, ApiError> {
     let result = sqlx::query_as::<_, Pasta>(
-        "SELECT id, title, content, slug, view_key, edit_key FROM pasta WHERE slug = ?",
+        r#"
+SELECT id, title, content, slug, view_key, edit_key
+FROM pasta
+WHERE slug = ?
+        "#,
     )
     .bind(slug)
     .fetch_optional(&state.db)
     .await
     .unwrap();
 
-    let pasta = result.ok_or_else(|| (StatusCode::NOT_FOUND, String::from("Pasta not found.")))?;
+    let pasta = result.ok_or_else(|| ApiError::new(
+        StatusCode::NOT_FOUND,
+        "Pasta not found.")
+    )?;
 
     if let Some(key) = pasta.view_key {
         let payload = payload
-            .map_err(|_| {
-                (
-                    StatusCode::BAD_REQUEST,
-                    String::from("View key is required."),
-                )
-            })?
+            .map_err(|_| ApiError::new(
+                StatusCode::BAD_REQUEST,
+                "View key is required."
+            ))?
             .0;
 
         if payload.view_key != key {
             return Err((
+            return Err(ApiError::new(
                 StatusCode::BAD_REQUEST,
-                String::from("View key is invalid."),
+                "View key is invalid.",
             ));
         }
     }
