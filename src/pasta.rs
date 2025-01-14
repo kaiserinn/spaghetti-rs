@@ -1,5 +1,6 @@
 use crate::error::ApiError;
 use crate::{extractor::Json, AppState};
+use axum::http::HeaderMap;
 use axum::{
     extract::{Path, State},
     http::StatusCode,
@@ -22,14 +23,12 @@ struct Pasta {
 }
 
 #[derive(Deserialize, Debug)]
-pub struct GetPastaPayload {
-    view_key: String,
 }
 
 pub async fn get_pasta(
     Path(slug): Path<String>,
     State(state): State<Arc<AppState>>,
-    payload: Result<Json<GetPastaPayload>, ApiError>,
+    headers: HeaderMap,
 ) -> Result<Json<Value>, ApiError> {
     let result = sqlx::query_as::<_, Pasta>(
         r#"
@@ -49,14 +48,13 @@ WHERE slug = ?
     )?;
 
     if let Some(stored_key) = pasta.view_key {
-        let payload = payload
-            .map_err(|_| ApiError::new(
+        let provided_key = headers.get("X-View-Key")
+            .ok_or_else(|| ApiError::new(
                 StatusCode::BAD_REQUEST,
                 "View key is required."
-            ))?
-            .0;
+            ))?;
 
-        let key = Base64::encode_string(&Sha256::digest(payload.view_key));
+        let key = Base64::encode_string(&Sha256::digest(provided_key));
         if key != stored_key {
             return Err(ApiError::new(
                 StatusCode::BAD_REQUEST,
