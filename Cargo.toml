@@ -10,3 +10,6 @@ serde_json = "1.0.134"
 tokio = { version = "1.42.0", features = ["full"] }
 sqlx = { version = "0.8.2", features = [ "mysql", "runtime-tokio", "time" ] }
 dotenvy = "0.15.7"
+nanoid = "0.4.0"
+sha2 = "0.10.8"
+base64ct = "1.6.0"

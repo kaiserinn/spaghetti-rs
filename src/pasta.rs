@@ -4,8 +4,10 @@ use axum::{
     extract::{Path, State},
     http::StatusCode,
 };
+use base64ct::{Base64, Encoding};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
+use sha2::{Sha256, Digest};
 use sqlx::FromRow;
 use std::sync::Arc;
 
@@ -46,7 +48,7 @@ WHERE slug = ?
         "Pasta not found.")
     )?;
 
-    if let Some(key) = pasta.view_key {
+    if let Some(stored_key) = pasta.view_key {
         let payload = payload
             .map_err(|_| ApiError::new(
                 StatusCode::BAD_REQUEST,
@@ -54,8 +56,8 @@ WHERE slug = ?
             ))?
             .0;
 
-        if payload.view_key != key {
-            return Err((
+        let key = Base64::encode_string(&Sha256::digest(payload.view_key));
+        if key != stored_key {
             return Err(ApiError::new(
                 StatusCode::BAD_REQUEST,
                 "View key is invalid.",
