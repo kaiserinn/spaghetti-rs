@@ -1,6 +1,6 @@
+use crate::error::ApiError;
 use axum::{extract::FromRequest, response::IntoResponse};
 use serde::Serialize;
-use crate::error::ApiError;
 
 #[derive(FromRequest, Debug)]
 #[from_request(via(axum::Json), rejection(ApiError))]

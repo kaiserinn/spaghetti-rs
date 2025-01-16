@@ -1,4 +1,6 @@
-use axum::{extract::rejection::JsonRejection, http::StatusCode, response::IntoResponse};
+use axum::{
+    extract::rejection::JsonRejection, http::StatusCode, response::IntoResponse,
+};
 use serde_json::json;
 
 #[derive(Debug)]

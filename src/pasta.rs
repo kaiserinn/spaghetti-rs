@@ -8,7 +8,7 @@ use axum::{
 use base64ct::{Base64, Encoding};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
-use sha2::{Sha256, Digest};
+use sha2::{Digest, Sha256};
 use sqlx::FromRow;
 use std::sync::Arc;
 
@@ -42,17 +42,14 @@ WHERE slug = ?
     .await
     .unwrap();
 
-    let pasta = result.ok_or_else(|| ApiError::new(
-        StatusCode::NOT_FOUND,
-        "Pasta not found.")
-    )?;
+    let pasta = result.ok_or_else(|| {
+        ApiError::new(StatusCode::NOT_FOUND, "Pasta not found.")
+    })?;
 
     if let Some(stored_key) = pasta.view_key {
-        let provided_key = headers.get("X-View-Key")
-            .ok_or_else(|| ApiError::new(
-                StatusCode::BAD_REQUEST,
-                "View key is required."
-            ))?;
+        let provided_key = headers.get("X-View-Key").ok_or_else(|| {
+            ApiError::new(StatusCode::BAD_REQUEST, "View key is required.")
+        })?;
 
         let key = Base64::encode_string(&Sha256::digest(provided_key));
         if key != stored_key {
