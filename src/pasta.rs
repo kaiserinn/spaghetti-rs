@@ -10,7 +10,7 @@ use nanoid::nanoid;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
-use sqlx::FromRow;
+use sqlx::{query, FromRow};
 use std::sync::Arc;
 
 #[derive(FromRow, Serialize, Debug)]
@@ -141,5 +141,51 @@ WHERE id = ?
         "title": new_pasta.title,
         "content": new_pasta.content,
         "slug": new_pasta.slug
+    })))
+}
+
+pub async fn delete_pasta(
+    State(state): State<Arc<AppState>>,
+    Path(id): Path<u32>,
+    headers: HeaderMap,
+) -> Result<Json<Value>, ApiError> {
+    let result = sqlx::query_as::<_, Pasta>(
+        r#"
+SELECT id, title, content, slug, view_key, edit_key
+FROM pasta
+WHERE id = ?
+        "#,
+    )
+    .bind(id)
+    .fetch_optional(&state.db)
+    .await
+    .unwrap();
+
+    let pasta = result.ok_or_else(|| {
+        ApiError::new(StatusCode::NOT_FOUND, "Pasta not found.")
+    })?;
+
+    if let Some(stored_key) = pasta.edit_key {
+        let provided_key = headers.get("X-Edit-Key").ok_or_else(|| {
+            ApiError::new(StatusCode::BAD_REQUEST, "Edit key is required.")
+        })?;
+
+        let key = Base64::encode_string(&Sha256::digest(provided_key));
+        if key != stored_key {
+            return Err(ApiError::new(
+                StatusCode::BAD_REQUEST,
+                "Edit key is invalid.",
+            ));
+        }
+    }
+
+    query("DELETE FROM pasta WHERE id = ?")
+        .bind(&id)
+        .execute(&state.db)
+        .await
+        .unwrap();
+
+    Ok(Json(json!({
+        "message": "Pasta is successfully deleted."
     })))
 }
